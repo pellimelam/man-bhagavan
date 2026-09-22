@@ -1,0 +1,189 @@
+{
+  "project": "Vidhwaan Bhagavad Gita Multilingual",
+  "purpose": "Maintain consistent translation of important Bhagavad Gita spiritual and philosophical terminology across all target languages.",
+  "rules": [
+    "Translate concepts according to their meaning in the supplied Telugu source.",
+    "Do not replace a concept with an unrelated modern or colloquial word merely because it is easier to understand.",
+    "Use the same established target-language terminology consistently throughout the complete 100-entry translation.",
+    "If a target language commonly retains a Sanskrit spiritual term, the established Sanskrit-derived term may be retained.",
+    "Do not translate the Sanskrit shloka itself.",
+    "Do not add explanations that are not present in the source.",
+    "Do not remove explanations that are present in the source.",
+    "When a term has multiple possible translations, prefer the translation that preserves the spiritual/philosophical meaning of the source.",
+    "Terminology consistency must be maintained within each language."
+  ],
+  "coreTerms": [
+    {
+      "source": "ఆత్మ",
+      "concept": "Self / Atman",
+      "instruction": "Translate according to the spiritual meaning of Atman or the Self in the source context."
+    },
+    {
+      "source": "దైవం",
+      "concept": "Divine / God",
+      "instruction": "Translate according to the context of the source. Do not unnecessarily change between personal and impersonal meanings."
+    },
+    {
+      "source": "ధర్మం",
+      "concept": "Dharma",
+      "instruction": "Preserve the philosophical meaning of dharma. Do not reduce it automatically to merely religion, law, or morality."
+    },
+    {
+      "source": "కర్మ",
+      "concept": "Karma / action",
+      "instruction": "Use the context of the source to determine whether karma refers to action, deed, or the broader philosophical concept of karma."
+    },
+    {
+      "source": "యోగం",
+      "concept": "Yoga",
+      "instruction": "Preserve the spiritual/philosophical meaning of yoga. Do not automatically interpret it as physical exercise."
+    },
+    {
+      "source": "భక్తి",
+      "concept": "Devotion / Bhakti",
+      "instruction": "Preserve the meaning of devotional relationship with the Divine."
+    },
+    {
+      "source": "జ్ఞానం",
+      "concept": "Knowledge / Jnana",
+      "instruction": "Preserve the spiritual and philosophical sense of knowledge rather than merely academic information."
+    },
+    {
+      "source": "మోక్షం",
+      "concept": "Liberation / Moksha",
+      "instruction": "Preserve the spiritual meaning of liberation."
+    },
+    {
+      "source": "వైరాగ్యం",
+      "concept": "Dispassion / detachment / Vairagya",
+      "instruction": "Preserve the meaning of freedom from attachment rather than interpreting it as indifference or irresponsibility."
+    },
+    {
+      "source": "సమత్వం",
+      "concept": "Equanimity / Samatva",
+      "instruction": "Preserve the meaning of mental equanimity and balance."
+    },
+    {
+      "source": "అహంకారం",
+      "concept": "Ego / Ahamkara",
+      "instruction": "Preserve the philosophical meaning of ego or ego-identification."
+    },
+    {
+      "source": "ప్రకృతి",
+      "concept": "Prakriti / nature",
+      "instruction": "Preserve the philosophical meaning of Prakriti where the source uses it in that sense."
+    },
+    {
+      "source": "పురుషుడు",
+      "concept": "Purusha / conscious Self",
+      "instruction": "Translate according to the philosophical context and do not automatically interpret it as simply 'man'."
+    },
+    {
+      "source": "శరణాగతి",
+      "concept": "Surrender / Sharanagati",
+      "instruction": "Preserve the spiritual meaning of surrender to the Divine."
+    },
+    {
+      "source": "సంకల్పం",
+      "concept": "Resolve / intention",
+      "instruction": "Translate according to context and preserve the meaning of deliberate intention or resolve."
+    },
+    {
+      "source": "కోరిక",
+      "concept": "Desire",
+      "instruction": "Translate according to the source context and distinguish desire from ordinary preference where appropriate."
+    },
+    {
+      "source": "కోపం",
+      "concept": "Anger",
+      "instruction": "Translate directly according to the source context."
+    },
+    {
+      "source": "మనస్సు",
+      "concept": "Mind",
+      "instruction": "Preserve the distinction between mind and intellect where the source makes that distinction."
+    },
+    {
+      "source": "బుద్ధి",
+      "concept": "Intellect / Buddhi",
+      "instruction": "Preserve the philosophical distinction between buddhi and the ordinary mind."
+    },
+    {
+      "source": "ఇంద్రియాలు",
+      "concept": "Senses / sense faculties",
+      "instruction": "Translate according to the spiritual/philosophical context."
+    },
+    {
+      "source": "సాక్షి",
+      "concept": "Witness",
+      "instruction": "Preserve the spiritual meaning of the witnessing consciousness."
+    },
+    {
+      "source": "శాంతి",
+      "concept": "Peace",
+      "instruction": "Preserve the inner/spiritual sense of peace when that is the meaning in the source."
+    },
+    {
+      "source": "అనుబంధం",
+      "concept": "Attachment",
+      "instruction": "Preserve the meaning of psychological or emotional attachment according to context."
+    },
+    {
+      "source": "సమర్పణ",
+      "concept": "Surrender / offering",
+      "instruction": "Translate according to whether the source means inner surrender or offering an action to the Divine."
+    },
+    {
+      "source": "దైవ కృప",
+      "concept": "Divine grace",
+      "instruction": "Preserve the devotional meaning of grace from the Divine."
+    },
+    {
+      "source": "శరణు",
+      "concept": "Refuge / surrender",
+      "instruction": "Translate according to the surrounding context and preserve the devotional meaning."
+    },
+    {
+      "source": "ఆనందం",
+      "concept": "Bliss / joy",
+      "instruction": "Use the source context to distinguish ordinary happiness from deeper spiritual bliss."
+    },
+    {
+      "source": "జన్మ",
+      "concept": "Birth / rebirth",
+      "instruction": "Translate according to context; do not automatically remove the spiritual meaning."
+    },
+    {
+      "source": "మరణం",
+      "concept": "Death",
+      "instruction": "Translate directly while preserving the philosophical context provided by the source."
+    },
+    {
+      "source": "ఆత్మజ్ఞానం",
+      "concept": "Self-knowledge",
+      "instruction": "Preserve the spiritual/philosophical meaning rather than reducing it to general self-awareness."
+    },
+    {
+      "source": "స్థితప్రజ్ఞ",
+      "concept": "Steady wisdom / Sthitaprajna",
+      "instruction": "Preserve the philosophical concept. If the target language commonly retains the Sanskrit term, it may be retained with an appropriate explanation only when the source itself provides one."
+    }
+  ],
+  "protectedConcepts": [
+    "ఆత్మ",
+    "దైవం",
+    "ధర్మం",
+    "కర్మ",
+    "యోగం",
+    "భక్తి",
+    "జ్ఞానం",
+    "మోక్షం",
+    "వైరాగ్యం",
+    "సమత్వం",
+    "అహంకారం",
+    "ప్రకృతి",
+    "పురుషుడు",
+    "శరణాగతి",
+    "స్థితప్రజ్ఞ"
+  ]
+}
