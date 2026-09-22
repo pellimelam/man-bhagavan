@@ -26,7 +26,7 @@ jobs:
           git config user.name "Vidhwaan GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Verify source files
+      - name: Verify required files
         run: |
           test -f gita.json
           test -f translation-config.json
@@ -40,57 +40,106 @@ jobs:
         run: |
           node validate-gita.js
 
-      - name: Translate Bhagavad Gita
+      - name: Translate, validate and commit each language
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
-          node translate-gita.js
+          set -e
 
-      - name: Validate generated JSON
+          LANGUAGES=(
+            "en"
+            "as"
+            "bn"
+            "brx"
+            "doi"
+            "gu"
+            "hi"
+            "kn"
+            "ks"
+            "kok"
+            "mai"
+            "ml"
+            "mni"
+            "mr"
+            "ne"
+            "or"
+            "pa"
+            "sa"
+            "sat"
+            "sd"
+            "ta"
+            "te"
+            "ur"
+          )
+
+          for LANGUAGE in "${LANGUAGES[@]}"; do
+            echo ""
+            echo "=============================================="
+            echo "PROCESSING LANGUAGE: $LANGUAGE"
+            echo "=============================================="
+
+            echo ""
+            echo "Translating $LANGUAGE..."
+            node translate-gita.js "$LANGUAGE"
+
+            echo ""
+            echo "Running structural validation..."
+            node validate-gita.js
+
+            echo ""
+            echo "Running semantic validation for $LANGUAGE..."
+            node validate-translation.js "$LANGUAGE"
+
+            echo ""
+            echo "Checking Git changes..."
+            git status --short
+
+            echo ""
+            echo "Committing $LANGUAGE..."
+
+            git add \
+              english.json \
+              assamese.json \
+              bengali.json \
+              bodo.json \
+              dogri.json \
+              gujarati.json \
+              hindi.json \
+              kannada.json \
+              kashmiri.json \
+              konkani.json \
+              maithili.json \
+              malayalam.json \
+              manipuri.json \
+              marathi.json \
+              nepali.json \
+              odia.json \
+              punjabi.json \
+              sanskrit.json \
+              santali.json \
+              sindhi.json \
+              tamil.json \
+              telugu.json \
+              urdu.json \
+              *.validation.json
+
+            if git diff --cached --quiet; then
+              echo "No changes to commit for $LANGUAGE."
+            else
+              git commit -m "Add Bhagavad Gita $LANGUAGE translation"
+              git push
+            fi
+
+            echo ""
+            echo "=============================================="
+            echo "COMPLETED AND PUSHED: $LANGUAGE"
+            echo "=============================================="
+          done
+
+      - name: Final validation
         run: |
           node validate-gita.js
 
-      - name: Semantic validation
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: |
-          node validate-translation.js
-
-      - name: Check generated files
+      - name: Final Git status
         run: |
           git status --short
-
-      - name: Commit generated translations
-        run: |
-          git add \
-            english.json \
-            assamese.json \
-            bengali.json \
-            bodo.json \
-            dogri.json \
-            gujarati.json \
-            hindi.json \
-            kannada.json \
-            kashmiri.json \
-            konkani.json \
-            maithili.json \
-            malayalam.json \
-            manipuri.json \
-            marathi.json \
-            nepali.json \
-            odia.json \
-            punjabi.json \
-            sanskrit.json \
-            santali.json \
-            sindhi.json \
-            tamil.json \
-            telugu.json \
-            urdu.json \
-            *.validation.json
-
-          if git diff --cached --quiet; then
-            echo "No new translation files to commit."
-          else
-            git commit -m "Add Bhagavad Gita multilingual translations"
-            git push
-          fi
