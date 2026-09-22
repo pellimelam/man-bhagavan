@@ -20,7 +20,8 @@
     "allowSummarization": false,
     "allowExpansion": false,
     "translateTitles": true,
-    "translateContent": true
+    "translateContent": true,
+    "protectSanskritWithPlaceholder": true
   },
   "languages": [
     {
@@ -143,7 +144,8 @@
     "useResponseHeaders": true,
     "respectRetryAfter": true,
     "waitOnRateLimit": true,
-    "minimumDelayBetweenRequestsMs": 3000
+    "minimumDelayBetweenRequestsMs": 3000,
+    "safetyMarginTokens": 500
   },
   "validation": {
     "requireExactly100Entries": true,
