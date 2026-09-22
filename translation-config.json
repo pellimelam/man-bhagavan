@@ -4,7 +4,7 @@
     "sourceFile": "gita.json",
     "sourceLanguage": "Telugu",
     "totalEntries": 100,
-    "batchSize": 10,
+    "batchSize": 5,
     "model": "openai/gpt-oss-120b",
     "provider": "groq",
     "maxRetries": 3
@@ -143,7 +143,7 @@
     "useResponseHeaders": true,
     "respectRetryAfter": true,
     "waitOnRateLimit": true,
-    "minimumDelayBetweenRequestsMs": 1000
+    "minimumDelayBetweenRequestsMs": 3000
   },
   "validation": {
     "requireExactly100Entries": true,
