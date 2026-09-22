@@ -1,0 +1,163 @@
+{
+  "project": {
+    "name": "Vidhwaan Bhagavad Gita Multilingual",
+    "sourceFile": "gita.json",
+    "sourceLanguage": "Telugu",
+    "totalEntries": 100,
+    "batchSize": 10,
+    "model": "openai/gpt-oss-120b",
+    "provider": "groq",
+    "maxRetries": 3
+  },
+  "translation": {
+    "preserveIds": true,
+    "preserveOrder": true,
+    "preserveSanskritVerse": true,
+    "preserveJsonStructure": true,
+    "allowAdditionalFields": false,
+    "allowMissingEntries": false,
+    "allowDuplicateEntries": false,
+    "allowSummarization": false,
+    "allowExpansion": false,
+    "translateTitles": true,
+    "translateContent": true
+  },
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "file": "english.json"
+    },
+    {
+      "code": "as",
+      "name": "Assamese",
+      "file": "assamese.json"
+    },
+    {
+      "code": "bn",
+      "name": "Bengali",
+      "file": "bengali.json"
+    },
+    {
+      "code": "brx",
+      "name": "Bodo",
+      "file": "bodo.json"
+    },
+    {
+      "code": "doi",
+      "name": "Dogri",
+      "file": "dogri.json"
+    },
+    {
+      "code": "gu",
+      "name": "Gujarati",
+      "file": "gujarati.json"
+    },
+    {
+      "code": "hi",
+      "name": "Hindi",
+      "file": "hindi.json"
+    },
+    {
+      "code": "kn",
+      "name": "Kannada",
+      "file": "kannada.json"
+    },
+    {
+      "code": "ks",
+      "name": "Kashmiri",
+      "file": "kashmiri.json"
+    },
+    {
+      "code": "kok",
+      "name": "Konkani",
+      "file": "konkani.json"
+    },
+    {
+      "code": "mai",
+      "name": "Maithili",
+      "file": "maithili.json"
+    },
+    {
+      "code": "ml",
+      "name": "Malayalam",
+      "file": "malayalam.json"
+    },
+    {
+      "code": "mni",
+      "name": "Manipuri",
+      "file": "manipuri.json"
+    },
+    {
+      "code": "mr",
+      "name": "Marathi",
+      "file": "marathi.json"
+    },
+    {
+      "code": "ne",
+      "name": "Nepali",
+      "file": "nepali.json"
+    },
+    {
+      "code": "or",
+      "name": "Odia",
+      "file": "odia.json"
+    },
+    {
+      "code": "pa",
+      "name": "Punjabi",
+      "file": "punjabi.json"
+    },
+    {
+      "code": "sa",
+      "name": "Sanskrit",
+      "file": "sanskrit.json"
+    },
+    {
+      "code": "sat",
+      "name": "Santali",
+      "file": "santali.json"
+    },
+    {
+      "code": "sd",
+      "name": "Sindhi",
+      "file": "sindhi.json"
+    },
+    {
+      "code": "ta",
+      "name": "Tamil",
+      "file": "tamil.json"
+    },
+    {
+      "code": "te",
+      "name": "Telugu",
+      "file": "telugu.json"
+    },
+    {
+      "code": "ur",
+      "name": "Urdu",
+      "file": "urdu.json"
+    }
+  ],
+  "rateLimit": {
+    "useResponseHeaders": true,
+    "respectRetryAfter": true,
+    "waitOnRateLimit": true,
+    "minimumDelayBetweenRequestsMs": 1000
+  },
+  "validation": {
+    "requireExactly100Entries": true,
+    "requireSequentialIds": true,
+    "requireExactObjectKeys": true,
+    "requireSanskritPreservation": true,
+    "requireNonEmptyTitle": true,
+    "requireNonEmptyContent": true,
+    "runSemanticValidation": true
+  },
+  "output": {
+    "encoding": "utf-8",
+    "prettyPrint": true,
+    "finalFileExtension": ".json",
+    "commitAfterEachLanguage": true
+  }
+}
