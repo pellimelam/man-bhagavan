@@ -167,29 +167,38 @@ function extractSanskritMap(entries) {
 
 function buildSchema(batchLength) {
   return {
-    type: "array",
-    minItems: batchLength,
-    maxItems: batchLength,
-    items: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        id: {
-          type: "string"
-        },
-        title: {
-          type: "string"
-        },
-        content: {
-          type: "string"
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      entries: {
+        type: "array",
+        minItems: batchLength,
+        maxItems: batchLength,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            id: {
+              type: "string"
+            },
+            title: {
+              type: "string"
+            },
+            content: {
+              type: "string"
+            }
+          },
+          required: [
+            "id",
+            "title",
+            "content"
+          ]
         }
-      },
-      required: [
-        "id",
-        "title",
-        "content"
-      ]
-    }
+      }
+    },
+    required: [
+      "entries"
+    ]
   };
 }
 
@@ -323,17 +332,14 @@ STRICT RULES:
 16. Do not replace the supplied source with another version of the Bhagavad Gita.
 17. Use natural, grammatically correct ${language.name}.
 18. Preserve important Bhagavad Gita terminology consistently.
-19. Sanskrit-derived spiritual terms may be retained when that is natural and
-    appropriate for the target language.
-20. The Sanskrit verse contained in the content MUST remain EXACTLY unchanged,
-    character-for-character.
-21. Do not translate, transliterate, correct, reformat, or modify the Sanskrit
-    verse itself.
+19. Sanskrit-derived spiritual terms may be retained when that is natural and appropriate for the target language.
+20. The Sanskrit verse contained in the content MUST remain EXACTLY unchanged, character-for-character.
+21. Do not translate, transliterate, correct, reformat, or modify the Sanskrit verse itself.
 22. Only the surrounding explanatory Telugu text should be translated.
 23. Do not add markdown.
 24. Do not add comments.
 25. Do not add fields.
-26. Return ONLY the requested JSON array.
+26. Return ONLY the requested JSON object.
 
 The glossary supplied by the application is guidance for terminology consistency.
 It does not override the meaning of the supplied Telugu source.
@@ -350,17 +356,21 @@ function buildUserPrompt(
   return `
 Translate the following Bhagavad Gita entries from Telugu to ${language.name}.
 
-Return exactly ${batch.length} objects.
+Return an object containing exactly one property named "entries".
 
-Required object structure:
+The "entries" property must contain exactly ${batch.length} translated objects.
 
-[
-  {
-    "id": "gita_1",
-    "title": "...",
-    "content": "..."
-  }
-]
+Required structure:
+
+{
+  "entries": [
+    {
+      "id": "gita_1",
+      "title": "...",
+      "content": "..."
+    }
+  ]
+}
 
 Do not change IDs.
 
@@ -487,10 +497,9 @@ async function callGroq(
             response_format: {
               type: "json_schema",
               json_schema: {
-                name:
-                  "gita_translation",
+                name: "gita_translation",
                 strict: true,
-                schema
+                schema: schema
               }
             }
           })
@@ -556,13 +565,24 @@ async function callGroq(
         );
       }
 
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed) ||
+        !Array.isArray(parsed.entries)
+      ) {
+        throw new Error(
+          "Groq returned invalid translation structure. Expected an object containing an entries array."
+        );
+      }
+
       validateTranslatedBatch(
-        parsed,
+        parsed.entries,
         batch,
         language
       );
 
-      return parsed;
+      return parsed.entries;
 
     } catch (error) {
       lastError = error;
