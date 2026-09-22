@@ -1,0 +1,17 @@
+{
+  "name": "vidhwaan-bhagavad-gita-multilingual",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vidhwaan Bhagavad Gita multilingual translation pipeline using Groq.",
+  "main": "translate-gita.js",
+  "type": "commonjs",
+  "scripts": {
+    "translate": "node translate-gita.js",
+    "validate": "node validate-gita.js",
+    "validate:translation": "node validate-translation.js",
+    "validate:all": "npm run validate && npm run validate:translation"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
