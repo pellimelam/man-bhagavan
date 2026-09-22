@@ -1,8 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 
-const CONFIG_PATH = path.join(__dirname, "translation-config.json");
-const GLOSSARY_PATH = path.join(__dirname, "translation-glossary.json");
+const CONFIG_PATH = path.join(
+  __dirname,
+  "translation-config.json"
+);
+
+const GLOSSARY_PATH = path.join(
+  __dirname,
+  "translation-glossary.json"
+);
 
 const config = JSON.parse(
   fs.readFileSync(CONFIG_PATH, "utf8")
@@ -15,58 +22,208 @@ const glossary = JSON.parse(
 const API_KEY = process.env.GROQ_API_KEY;
 
 if (!API_KEY) {
-  console.error("ERROR: GROQ_API_KEY is not set.");
+  console.error(
+    "ERROR: GROQ_API_KEY is not set."
+  );
   process.exit(1);
 }
 
 const API_URL =
   "https://api.groq.com/openai/v1/chat/completions";
 
-const MODEL = config.project.model;
-const BATCH_SIZE = config.project.batchSize;
-const MAX_RETRIES = config.project.maxRetries;
+const MODEL =
+  config.project.model;
 
-const SOURCE_FILE = path.join(
-  __dirname,
-  config.project.sourceFile
-);
+const BATCH_SIZE =
+  config.project.batchSize;
 
-const source = JSON.parse(
-  fs.readFileSync(SOURCE_FILE, "utf8")
-);
+const MAX_RETRIES =
+  config.project.maxRetries;
+
+const SOURCE_FILE =
+  path.join(
+    __dirname,
+    config.project.sourceFile
+  );
+
+const source =
+  JSON.parse(
+    fs.readFileSync(
+      SOURCE_FILE,
+      "utf8"
+    )
+  );
+
+let lastRateLimitState = {
+  remainingTokens: null,
+  resetTokensMs: 0,
+  remainingRequests: null,
+  resetRequestsMs: 0
+};
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(
+    resolve => setTimeout(resolve, ms)
+  );
+}
+
+function parseDurationToMs(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const text =
+    String(value).trim();
+
+  let total = 0;
+
+  const minuteMatch =
+    text.match(
+      /([\d.]+)m/
+    );
+
+  const secondMatch =
+    text.match(
+      /([\d.]+)s/
+    );
+
+  const millisecondMatch =
+    text.match(
+      /([\d.]+)ms/
+    );
+
+  if (minuteMatch) {
+    total +=
+      Number(minuteMatch[1]) *
+      60 *
+      1000;
+  }
+
+  if (secondMatch) {
+    total +=
+      Number(secondMatch[1]) *
+      1000;
+  }
+
+  if (millisecondMatch) {
+    total +=
+      Number(millisecondMatch[1]);
+  }
+
+  if (total === 0) {
+    const numeric =
+      Number(text);
+
+    if (
+      Number.isFinite(numeric)
+    ) {
+      return numeric * 1000;
+    }
+  }
+
+  return total;
+}
+
+function updateRateLimitState(
+  response
+) {
+  const remainingTokens =
+    Number(
+      response.headers.get(
+        "x-ratelimit-remaining-tokens"
+      )
+    );
+
+  const remainingRequests =
+    Number(
+      response.headers.get(
+        "x-ratelimit-remaining-requests"
+      )
+    );
+
+  const resetTokens =
+    response.headers.get(
+      "x-ratelimit-reset-tokens"
+    );
+
+  const resetRequests =
+    response.headers.get(
+      "x-ratelimit-reset-requests"
+    );
+
+  lastRateLimitState = {
+    remainingTokens:
+      Number.isFinite(
+        remainingTokens
+      )
+        ? remainingTokens
+        : null,
+
+    resetTokensMs:
+      parseDurationToMs(
+        resetTokens
+      ),
+
+    remainingRequests:
+      Number.isFinite(
+        remainingRequests
+      )
+        ? remainingRequests
+        : null,
+
+    resetRequestsMs:
+      parseDurationToMs(
+        resetRequests
+      )
+  };
 }
 
 function getLanguageFromArgument() {
-  const argument = process.argv[2];
+  const argument =
+    process.argv[2];
 
   if (!argument) {
     console.error("");
-    console.error("ERROR: Language code is required.");
+    console.error(
+      "ERROR: Language code is required."
+    );
     console.error("");
-    console.error("Examples:");
-    console.error("  node translate-gita.js en");
-    console.error("  node translate-gita.js hi");
-    console.error("  node translate-gita.js ta");
+    console.error(
+      "Examples:"
+    );
+    console.error(
+      "  node translate-gita.js en"
+    );
+    console.error(
+      "  node translate-gita.js hi"
+    );
+    console.error(
+      "  node translate-gita.js ta"
+    );
     console.error("");
+
     process.exit(1);
   }
 
-  const normalized = argument.toLowerCase();
+  const normalized =
+    argument.toLowerCase();
 
-  const language = config.languages.find(
-    item =>
-      item.code.toLowerCase() === normalized ||
-      item.name.toLowerCase() === normalized ||
-      item.file.toLowerCase() === normalized
-  );
+  const language =
+    config.languages.find(
+      item =>
+        item.code.toLowerCase() ===
+          normalized ||
+        item.name.toLowerCase() ===
+          normalized ||
+        item.file.toLowerCase() ===
+          normalized
+    );
 
   if (!language) {
     console.error(
-      `ERROR: Language not found in translation-config.json: ${argument}`
+      `ERROR: Language not found: ${argument}`
     );
+
     process.exit(1);
   }
 
@@ -74,29 +231,40 @@ function getLanguageFromArgument() {
 }
 
 function validateSource() {
-  if (!Array.isArray(source)) {
+  if (
+    !Array.isArray(source)
+  ) {
     throw new Error(
       "Source file must contain a JSON array."
     );
   }
 
   if (
-    config.validation.requireExactly100Entries &&
-    source.length !== config.project.totalEntries
+    config.validation
+      .requireExactly100Entries &&
+    source.length !==
+      config.project.totalEntries
   ) {
     throw new Error(
       `Source must contain exactly ${config.project.totalEntries} entries. Found ${source.length}.`
     );
   }
 
-  const ids = new Set();
+  const ids =
+    new Set();
 
-  for (let i = 0; i < source.length; i++) {
-    const entry = source[i];
+  for (
+    let i = 0;
+    i < source.length;
+    i++
+  ) {
+    const entry =
+      source[i];
 
     if (
       !entry ||
-      typeof entry !== "object" ||
+      typeof entry !==
+        "object" ||
       Array.isArray(entry)
     ) {
       throw new Error(
@@ -104,34 +272,46 @@ function validateSource() {
       );
     }
 
-    const expectedId = `gita_${i + 1}`;
+    const expectedId =
+      `gita_${i + 1}`;
 
-    if (entry.id !== expectedId) {
+    if (
+      entry.id !==
+      expectedId
+    ) {
       throw new Error(
         `Source entry ${i + 1} must have id ${expectedId}. Found ${entry.id}.`
       );
     }
 
-    if (ids.has(entry.id)) {
+    if (
+      ids.has(entry.id)
+    ) {
       throw new Error(
         `Duplicate source id: ${entry.id}`
       );
     }
 
-    ids.add(entry.id);
+    ids.add(
+      entry.id
+    );
 
     if (
-      typeof entry.title !== "string" ||
-      entry.title.trim() === ""
+      typeof entry.title !==
+        "string" ||
+      entry.title.trim() ===
+        ""
     ) {
       throw new Error(
-        `Source ${entry.id} has an empty title.`
+        `Source ${entry.id} has empty title.`
       );
     }
 
     if (
-      typeof entry.content !== "string" ||
-      entry.content.trim() === ""
+      typeof entry.content !==
+        "string" ||
+      entry.content.trim() ===
+        ""
     ) {
       throw new Error(
         `Source ${entry.id} has empty content.`
@@ -140,27 +320,85 @@ function validateSource() {
   }
 }
 
-function getSanskritVerse(content) {
-  if (typeof content !== "string") {
+function extractSanskritVerse(
+  content
+) {
+  if (
+    typeof content !==
+    "string"
+  ) {
     return null;
   }
 
-  const match = content.match(
-    /(?:శ్లోకం|श्लोक|श्लोकः|Verse|Sloka|śloka)\s*:\s*([\s\S]*?)(?:\n\s*\n|$)/i
-  );
+  const normalized =
+    content
+      .replace(
+        /\r\n/g,
+        "\n"
+      )
+      .replace(
+        /\r/g,
+        "\n"
+      );
 
-  return match
-    ? match[1].trim()
-    : null;
+  const labelMatch =
+    normalized.match(
+      /(?:^|\n)\s*(?:శ్లోకం|श्लोक|श्लोकः|Verse|Sloka|śloka)\s*:\s*\n?/i
+    );
+
+  if (
+    !labelMatch
+  ) {
+    return null;
+  }
+
+  const start =
+    labelMatch.index +
+    labelMatch[0].length;
+
+  const remaining =
+    normalized.slice(
+      start
+    );
+
+  const blankLine =
+    remaining.search(
+      /\n\s*\n/
+    );
+
+  let verse;
+
+  if (
+    blankLine >= 0
+  ) {
+    verse =
+      remaining
+        .slice(
+          0,
+          blankLine
+        )
+        .trim();
+  } else {
+    verse =
+      remaining.trim();
+  }
+
+  return verse || null;
 }
 
-function extractSanskritMap(entries) {
-  const map = new Map();
+function getSanskritMap(
+  entries
+) {
+  const map =
+    new Map();
 
-  for (const entry of entries) {
-    const verse = getSanskritVerse(
-      entry.content
-    );
+  for (
+    const entry of entries
+  ) {
+    const verse =
+      extractSanskritVerse(
+        entry.content
+      );
 
     if (!verse) {
       throw new Error(
@@ -168,27 +406,144 @@ function extractSanskritMap(entries) {
       );
     }
 
-    map.set(entry.id, verse);
+    map.set(
+      entry.id,
+      verse
+    );
   }
 
   return map;
+}
+
+function protectSanskrit(
+  entries
+) {
+  const protectedEntries =
+    [];
+
+  const verseMap =
+    getSanskritMap(
+      entries
+    );
+
+  for (
+    const entry of entries
+  ) {
+    const verse =
+      verseMap.get(
+        entry.id
+      );
+
+    const placeholder =
+      `__SANSKRIT_${entry.id}__`;
+
+    const replaced =
+      entry.content.replace(
+        verse,
+        placeholder
+      );
+
+    if (
+      replaced ===
+      entry.content
+    ) {
+      throw new Error(
+        `Failed to protect Sanskrit in ${entry.id}.`
+      );
+    }
+
+    protectedEntries.push({
+      id: entry.id,
+      title: entry.title,
+      content: replaced
+    });
+  }
+
+  return {
+    entries:
+      protectedEntries,
+    verses:
+      verseMap
+  };
+}
+
+function restoreSanskrit(
+  translatedEntries,
+  sourceEntries,
+  language
+) {
+  const sourceSanskrit =
+    getSanskritMap(
+      sourceEntries
+    );
+
+  return translatedEntries.map(
+    entry => {
+      const sourceVerse =
+        sourceSanskrit.get(
+          entry.id
+        );
+
+      const placeholder =
+        `__SANSKRIT_${entry.id}__`;
+
+      if (
+        !entry.content.includes(
+          placeholder
+        )
+      ) {
+        throw new Error(
+          `${language.name}: Sanskrit placeholder missing in ${entry.id}.`
+        );
+      }
+
+      const restored =
+        entry.content.replace(
+          placeholder,
+          sourceVerse
+        );
+
+      if (
+        restored.includes(
+          placeholder
+        )
+      ) {
+        throw new Error(
+          `${language.name}: Sanskrit placeholder was not fully restored in ${entry.id}.`
+        );
+      }
+
+      return {
+        id: entry.id,
+        title: entry.title,
+        content: restored
+      };
+    }
+  );
 }
 
 function buildCompactGlossary() {
   const compact = {};
 
   if (
-    Array.isArray(glossary.coreTerms)
+    Array.isArray(
+      glossary.coreTerms
+    )
   ) {
     for (
-      const term of glossary.coreTerms
+      const term of
+        glossary.coreTerms
     ) {
       if (
         term &&
-        typeof term.source === "string"
+        typeof term.source ===
+          "string"
       ) {
-        compact[term.source] =
-          term.concept || "";
+        compact[
+          term.source
+        ] =
+          term.concept ||
+          "";
       }
     }
   }
@@ -199,18 +554,23 @@ function buildCompactGlossary() {
 const COMPACT_GLOSSARY =
   buildCompactGlossary();
 
-function buildSchema(batchLength) {
+function buildSchema(
+  batchLength
+) {
   return {
     type: "object",
     additionalProperties: false,
     properties: {
       entries: {
         type: "array",
-        minItems: batchLength,
-        maxItems: batchLength,
+        minItems:
+          batchLength,
+        maxItems:
+          batchLength,
         items: {
           type: "object",
-          additionalProperties: false,
+          additionalProperties:
+            false,
           properties: {
             id: {
               type: "string"
@@ -241,9 +601,13 @@ function validateTranslatedBatch(
   sourceBatch,
   language
 ) {
-  if (!Array.isArray(translated)) {
+  if (
+    !Array.isArray(
+      translated
+    )
+  ) {
     throw new Error(
-      `${language.name}: Groq response is not an array.`
+      `${language.name}: response entries is not an array.`
     );
   }
 
@@ -252,16 +616,12 @@ function validateTranslatedBatch(
     sourceBatch.length
   ) {
     throw new Error(
-      `${language.name}: expected ${sourceBatch.length} entries but received ${translated.length}.`
+      `${language.name}: expected ${sourceBatch.length} entries, received ${translated.length}.`
     );
   }
 
-  const sourceSanskrit =
-    extractSanskritMap(
-      sourceBatch
-    );
-
-  const ids = new Set();
+  const ids =
+    new Set();
 
   for (
     let i = 0;
@@ -276,11 +636,14 @@ function validateTranslatedBatch(
 
     if (
       !translatedEntry ||
-      typeof translatedEntry !== "object" ||
-      Array.isArray(translatedEntry)
+      typeof translatedEntry !==
+        "object" ||
+      Array.isArray(
+        translatedEntry
+      )
     ) {
       throw new Error(
-        `${language.name}: ${sourceEntry.id} is not a valid object.`
+        `${language.name}: ${sourceEntry.id} is not an object.`
       );
     }
 
@@ -296,7 +659,7 @@ function validateTranslatedBatch(
       keys[2] !== "title"
     ) {
       throw new Error(
-        `${language.name}: ${sourceEntry.id} has invalid object structure.`
+        `${language.name}: ${sourceEntry.id} has invalid fields.`
       );
     }
 
@@ -345,18 +708,16 @@ function validateTranslatedBatch(
       );
     }
 
-    const expectedSanskrit =
-      sourceSanskrit.get(
-        sourceEntry.id
-      );
+    const placeholder =
+      `__SANSKRIT_${sourceEntry.id}__`;
 
     if (
       !translatedEntry.content.includes(
-        expectedSanskrit
+        placeholder
       )
     ) {
       throw new Error(
-        `${language.name}: Sanskrit verse changed or missing in ${sourceEntry.id}.`
+        `${language.name}: Sanskrit placeholder changed or missing in ${sourceEntry.id}.`
       );
     }
   }
@@ -364,7 +725,9 @@ function validateTranslatedBatch(
   return true;
 }
 
-function buildSystemPrompt(language) {
+function buildSystemPrompt(
+  language
+) {
   return `
 You are a highly accurate Bhagavad Gita translator.
 
@@ -372,41 +735,66 @@ Translate the supplied Telugu source into ${language.name}.
 
 The supplied Telugu source is the ONLY authoritative source.
 
-Do not replace it with another version of the Bhagavad Gita.
+IMPORTANT:
+
+The Sanskrit verses have been replaced by protected placeholders.
+
+A placeholder looks like:
+
+__SANSKRIT_gita_1__
+
+You MUST preserve every Sanskrit placeholder EXACTLY.
+
+Never translate it.
+
+Never transliterate it.
+
+Never modify it.
+
+Never remove it.
+
+Never change its spelling.
+
+Never change its capitalization.
+
+Never add spaces inside it.
+
+Never move it to another entry.
+
+The application will restore the original Sanskrit verse automatically after translation.
 
 STRICT RULES:
 
 1. Translate the title faithfully.
 2. Translate the content faithfully.
 3. Preserve every meaning expressed in the source.
-4. Preserve every important qualification in the source.
+4. Preserve every important qualification.
 5. Do not summarize.
 6. Do not shorten.
 7. Do not expand.
 8. Do not add explanations.
 9. Do not remove explanations.
-10. Do not add information from outside the source.
+10. Do not add outside information.
 11. Do not silently correct the Telugu source.
-12. Preserve the exact id.
-13. Preserve the exact entry order.
+12. Preserve exact IDs.
+13. Preserve exact entry order.
 14. Return exactly the requested number of entries.
 15. Do not duplicate entries.
 16. Use natural and grammatically correct ${language.name}.
-17. Preserve spiritual and philosophical meaning.
-18. Maintain terminology consistency.
-19. Do not translate the Sanskrit verse.
-20. Do not transliterate the Sanskrit verse.
-21. Do not correct the Sanskrit verse.
-22. Do not reformat the Sanskrit verse.
-23. The Sanskrit verse must remain EXACTLY character-for-character.
-24. Do not add markdown.
-25. Do not add comments.
-26. Do not add JSON fields.
-27. Return only the requested JSON object.
+17. Preserve spiritual meaning.
+18. Preserve philosophical meaning.
+19. Maintain terminology consistency.
+20. Preserve every Sanskrit placeholder exactly.
+21. Do not add markdown.
+22. Do not add comments.
+23. Do not add fields.
+24. Return only the requested JSON object.
 
-Important terminology guidance:
+Terminology guidance:
 
-${JSON.stringify(COMPACT_GLOSSARY)}
+${JSON.stringify(
+  COMPACT_GLOSSARY
+)}
 
 Target language:
 
@@ -416,13 +804,8 @@ ${language.name}
 
 function buildUserPrompt(
   language,
-  batch
+  protectedBatch
 ) {
-  const sourceText =
-    JSON.stringify(
-      batch
-    );
-
   return `
 Translate these Bhagavad Gita entries from Telugu to ${language.name}.
 
@@ -438,82 +821,110 @@ Return exactly this structure:
   ]
 }
 
-The "entries" array must contain exactly ${batch.length} objects.
+The entries array must contain exactly ${protectedBatch.length} objects.
 
-Preserve IDs exactly.
+Preserve every ID exactly.
 
 Preserve entry order exactly.
 
-The Sanskrit verse inside each content field must remain EXACTLY unchanged.
+MOST IMPORTANT:
 
-Do not add or remove information.
+Every Sanskrit placeholder must remain EXACTLY unchanged.
+
+For example:
+
+__SANSKRIT_gita_59__
+
+must remain:
+
+__SANSKRIT_gita_59__
+
+Do not translate it.
+
+Do not modify it.
+
+Do not remove it.
+
+Do not replace it with Sanskrit.
+
+The application will automatically restore the original Sanskrit verse.
 
 SOURCE:
 
-${sourceText}
+${JSON.stringify(
+  protectedBatch
+)}
 `;
 }
 
-function getHeaderNumber(
-  response,
-  name
+function estimateTokens(
+  text
 ) {
-  const value =
-    response.headers.get(name);
+  const characters =
+    String(text).length;
 
-  if (
-    value === null ||
-    value === ""
-  ) {
-    return null;
-  }
-
-  const number =
-    Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : null;
+  return Math.ceil(
+    characters / 3.5
+  );
 }
 
-async function waitForRateLimit(
-  response
+function estimateRequestTokens(
+  systemPrompt,
+  userPrompt
 ) {
-  const remainingTokens =
-    getHeaderNumber(
-      response,
-      "x-ratelimit-remaining-tokens"
+  const promptTokens =
+    estimateTokens(
+      systemPrompt
+    ) +
+    estimateTokens(
+      userPrompt
     );
 
-  const remainingRequests =
-    getHeaderNumber(
-      response,
-      "x-ratelimit-remaining-requests"
+  const schemaTokens =
+    estimateTokens(
+      JSON.stringify(
+        buildSchema(
+          BATCH_SIZE
+        )
+      )
     );
+
+  return (
+    promptTokens +
+    schemaTokens +
+    1000
+  );
+}
+
+async function waitBeforeRequest(
+  estimatedTokens
+) {
+  const state =
+    lastRateLimitState;
 
   if (
-    remainingTokens !== null &&
-    remainingTokens <= 0
+    state.remainingTokens !==
+      null &&
+    state.remainingTokens <
+      estimatedTokens +
+        config.rateLimit
+          .safetyMarginTokens
   ) {
+    const waitMs =
+      Math.max(
+        state.resetTokensMs,
+        3000
+      );
+
+    console.log("");
     console.log(
-      "Token limit reached."
+      `Waiting ${Math.ceil(
+        waitMs / 1000
+      )} seconds for TPM window...`
     );
 
     await sleep(
-      5000
-    );
-  }
-
-  if (
-    remainingRequests !== null &&
-    remainingRequests <= 0
-  ) {
-    console.log(
-      "Request limit reached."
-    );
-
-    await sleep(
-      5000
+      waitMs
     );
   }
 
@@ -525,11 +936,19 @@ async function waitForRateLimit(
 
 async function callGroq(
   language,
-  batch
+  sourceBatch
 ) {
+  const protectedData =
+    protectSanskrit(
+      sourceBatch
+    );
+
+  const protectedBatch =
+    protectedData.entries;
+
   const schema =
     buildSchema(
-      batch.length
+      protectedBatch.length
     );
 
   const systemPrompt =
@@ -540,10 +959,30 @@ async function callGroq(
   const userPrompt =
     buildUserPrompt(
       language,
-      batch
+      protectedBatch
     );
 
-  let lastError = null;
+  const estimatedTokens =
+    estimateRequestTokens(
+      systemPrompt,
+      userPrompt
+    );
+
+  console.log(
+    `Estimated request tokens: ${estimatedTokens}`
+  );
+
+  if (
+    estimatedTokens >
+    7000
+  ) {
+    console.error(
+      `WARNING: Estimated request size is ${estimatedTokens} tokens.`
+    );
+  }
+
+  let lastError =
+    null;
 
   for (
     let attempt = 1;
@@ -551,6 +990,10 @@ async function callGroq(
     attempt++
   ) {
     try {
+      await waitBeforeRequest(
+        estimatedTokens
+      );
+
       console.log(
         `Groq request attempt ${attempt}/${MAX_RETRIES}...`
       );
@@ -568,11 +1011,18 @@ async function callGroq(
             },
             body:
               JSON.stringify({
-                model: MODEL,
-                temperature: 0,
-                max_completion_tokens: 8000,
+                model:
+                  MODEL,
+
+                temperature:
+                  0,
+
+                max_completion_tokens:
+                  8000,
+
                 reasoning_effort:
                   "medium",
+
                 messages: [
                   {
                     role:
@@ -587,14 +1037,18 @@ async function callGroq(
                       userPrompt
                   }
                 ],
+
                 response_format: {
                   type:
                     "json_schema",
+
                   json_schema: {
                     name:
                       "gita_translation",
+
                     strict:
                       true,
+
                     schema
                   }
                 }
@@ -602,17 +1056,9 @@ async function callGroq(
           }
         );
 
-      if (
-        response.status ===
-        413
-      ) {
-        const body =
-          await response.text();
-
-        throw new Error(
-          `REQUEST_TOO_LARGE: ${body}`
-        );
-      }
+      updateRateLimitState(
+        response
+      );
 
       if (
         response.status ===
@@ -630,13 +1076,28 @@ async function callGroq(
         );
 
         await sleep(
-          retryAfter * 1000
+          retryAfter *
+            1000
         );
 
         continue;
       }
 
-      if (!response.ok) {
+      if (
+        response.status ===
+        413
+      ) {
+        const body =
+          await response.text();
+
+        throw new Error(
+          `REQUEST_TOO_LARGE: ${body}`
+        );
+      }
+
+      if (
+        !response.ok
+      ) {
         const body =
           await response.text();
 
@@ -644,10 +1105,6 @@ async function callGroq(
           `Groq API ${response.status}: ${body}`
         );
       }
-
-      await waitForRateLimit(
-        response
-      );
 
       const result =
         await response.json();
@@ -684,23 +1141,32 @@ async function callGroq(
         !parsed ||
         typeof parsed !==
           "object" ||
-        Array.isArray(parsed) ||
+        Array.isArray(
+          parsed
+        ) ||
         !Array.isArray(
           parsed.entries
         )
       ) {
         throw new Error(
-          "Groq returned invalid translation structure. Expected an object containing an entries array."
+          "Groq returned invalid translation structure."
         );
       }
 
       validateTranslatedBatch(
         parsed.entries,
-        batch,
+        protectedBatch,
         language
       );
 
-      return parsed.entries;
+      const restored =
+        restoreSanskrit(
+          parsed.entries,
+          sourceBatch,
+          language
+        );
+
+      return restored;
 
     } catch (
       error
@@ -715,12 +1181,52 @@ async function callGroq(
       ) {
         console.error("");
         console.error(
-          "ERROR: Groq rejected this request because it is too large."
+          "Groq rejected the request as too large."
         );
         console.error(
-          "The batch size must be reduced further."
+          "Reducing batch size automatically for this batch."
         );
-        console.error("");
+
+        if (
+          sourceBatch.length >
+          1
+        ) {
+          const middle =
+            Math.ceil(
+              sourceBatch.length /
+                2
+            );
+
+          const firstHalf =
+            sourceBatch.slice(
+              0,
+              middle
+            );
+
+          const secondHalf =
+            sourceBatch.slice(
+              middle
+            );
+
+          const first =
+            await callGroq(
+              language,
+              firstHalf
+            );
+
+          const second =
+            secondHalf.length > 0
+              ? await callGroq(
+                  language,
+                  secondHalf
+                )
+              : [];
+
+          return [
+            ...first,
+            ...second
+          ];
+        }
 
         throw error;
       }
@@ -744,7 +1250,9 @@ async function callGroq(
           );
 
         console.log(
-          `Retrying in ${delay / 1000} seconds...`
+          `Retrying in ${Math.ceil(
+            delay / 1000
+          )} seconds...`
         );
 
         await sleep(
@@ -820,7 +1328,7 @@ function findExistingOutput(
     }
 
     const sourceSanskrit =
-      extractSanskritMap(
+      getSanskritMap(
         source
       );
 
@@ -876,9 +1384,6 @@ function copyTeluguOutput(
   console.log(
     "Telugu source copied directly."
   );
-  console.log(
-    `Created: ${language.file}`
-  );
 }
 
 async function translateLanguage(
@@ -928,6 +1433,7 @@ async function translateLanguage(
     console.log(
       "Skipping translation."
     );
+
     return;
   }
 
@@ -1003,26 +1509,26 @@ async function translateLanguage(
   }
 
   const sourceSanskrit =
-    extractSanskritMap(
+    getSanskritMap(
       source
     );
 
   for (
-    const translatedEntry of
+    const entry of
       allTranslations
   ) {
-    const expectedVerse =
+    const expected =
       sourceSanskrit.get(
-        translatedEntry.id
+        entry.id
       );
 
     if (
-      !translatedEntry.content.includes(
-        expectedVerse
+      !entry.content.includes(
+        expected
       )
     ) {
       throw new Error(
-        `${language.name}: Sanskrit verse was changed or removed in ${translatedEntry.id}.`
+        `${language.name}: final Sanskrit verification failed for ${entry.id}.`
       );
     }
   }
@@ -1068,15 +1574,19 @@ async function main() {
   console.log(
     "Vidhwaan Bhagavad Gita Translation Pipeline"
   );
+
   console.log(
     "--------------------------------------------"
   );
+
   console.log(
     `Model: ${MODEL}`
   );
+
   console.log(
     `Source: ${config.project.sourceFile}`
   );
+
   console.log(
     `Batch size: ${BATCH_SIZE}`
   );
@@ -1091,6 +1601,7 @@ async function main() {
   );
 
   console.log("");
+
   console.log(
     "Translation process finished successfully."
   );
@@ -1099,15 +1610,19 @@ async function main() {
 main().catch(
   error => {
     console.error("");
+
     console.error(
       "=============================================="
     );
+
     console.error(
       "TRANSLATION FAILED"
     );
+
     console.error(
       "=============================================="
     );
+
     console.error(
       error.stack ||
       error.message
